@@ -259,3 +259,30 @@ test('about page is displayed', async ({ page }) => {
   await expect(page).toHaveURL(/\/about/);
   await expect(page.getByRole('main')).toBeVisible();
 });
+
+test('order checkout remains disabled until a store and pizza are selected', async ({ page }) => {
+  await basicInit(page);
+
+  await page.getByRole('button', { name: 'Order now' }).click();
+
+  const checkout = page.getByRole('button', { name: 'Checkout' });
+  await expect(checkout).toBeDisabled();
+
+  await page.getByRole('combobox').selectOption('4');
+  await expect(checkout).toBeDisabled();
+
+  await page.getByRole('link', {
+    name: 'Image Description Veggie A',
+  }).click();
+
+  await expect(checkout).toBeEnabled();
+});
+
+test('API documentation displays mocked endpoints', async ({ page }) => {
+  await basicInit(page);
+
+  await page.goto('/docs');
+
+  await expect(page.getByRole('main')).toContainText('/api/order/menu');
+  await expect(page.getByRole('main')).toContainText('Get the pizza menu');
+});
