@@ -164,3 +164,47 @@ test('registration creates an account', async ({ page }) => {
 
   await expect(page.getByRole('link', { name: /Alex Smith|AS/ })).toBeVisible();
 });
+
+test('order selection increases pizza quantity', async ({ page }) => {
+  await basicInit(page);
+
+  await page.getByRole('button', { name: 'Order now' }).click();
+  await page.getByRole('combobox').selectOption('4');
+
+  const veggie = page.getByRole('link', {
+    name: 'Image Description Veggie A',
+  });
+
+  await veggie.click();
+  await expect(page.getByText('Selected pizzas: 1')).toBeVisible();
+
+  await veggie.click();
+  await expect(page.getByText('Selected pizzas: 2')).toBeVisible();
+});
+
+test('store options are loaded from the mocked backend', async ({ page }) => {
+  await basicInit(page);
+
+  await page.getByRole('button', { name: 'Order now' }).click();
+
+  const storeSelect = page.getByRole('combobox');
+
+  await expect(storeSelect.locator('option')).toHaveText([
+    'choose store',
+    'Lehi',
+    'Springville',
+    'American Fork',
+    'Spanish Fork',
+  ]);
+});
+
+test('registration rejects missing required fields', async ({ page }) => {
+  await basicInit(page);
+
+  await page.getByRole('link', { name: 'Register', exact: true }).click();
+  await page.getByRole('button', { name: 'Register', exact: true }).click();
+
+  await expect(page.getByRole('textbox', { name: /name/i })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Email address' })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Password' })).toBeVisible();
+});
