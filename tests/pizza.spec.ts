@@ -7,19 +7,33 @@ async function basicInit(page: Page) {
   const validUsers: Record<string, User> = { 'd@jwt.com': { id: '3', name: 'Kai Chen', email: 'd@jwt.com', password: 'a', roles: [{ role: Role.Diner }] } };
 
   await page.route('*/**/api/auth', async (route) => {
-    const loginReq = route.request().postDataJSON();
-    const user = validUsers[loginReq.email];
-    if (!user || user.password !== loginReq.password) {
+    const request = route.request();
+    const authReq = request.postDataJSON();
+
+    if (request.method() === 'POST') {
+      const registeredUser = {
+        id: '4',
+        name: authReq.name,
+        email: authReq.email,
+        roles: [{ role: Role.Diner }],
+      };
+
+      await route.fulfill({
+        json: { user: registeredUser, token: 'registered-token' },
+      });
+      return;
+    }
+
+    const user = validUsers[authReq.email];
+    if (!user || user.password !== authReq.password) {
       await route.fulfill({ status: 401, json: { error: 'Unauthorized' } });
       return;
     }
-    loggedInUser = validUsers[loginReq.email];
-    const loginRes = {
-      user: loggedInUser,
-      token: 'abcdef',
-    };
-    expect(route.request().method()).toBe('PUT');
-    await route.fulfill({ json: loginRes });
+
+    loggedInUser = user;
+    await route.fulfill({
+      json: { user: loggedInUser, token: 'abcdef' },
+    });
   });
 
   await page.route('*/**/api/user/me', async (route) => {
@@ -113,4 +127,40 @@ test('menu displays available pizzas', async ({ page }) => {
   await expect(page.getByText('A garden of delight')).toBeVisible();
   await expect(page.getByText('Pepperoni')).toBeVisible();
   await expect(page.getByText('Spicy treat')).toBeVisible();
+});
+
+test('invalid login is rejected', async ({ page }) => {
+  await basicInit(page);
+
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('d@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('wrong-password');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await expect(page.getByRole('link', { name: 'Login', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'KC', exact: true })).not.toBeVisible();
+});
+
+test('checkout requires login before payment', async ({ page }) => {
+  await basicInit(page);
+
+  await page.getByRole('button', { name: 'Order now' }).click();
+  await page.getByRole('combobox').selectOption('4');
+  await page.getByRole('link', { name: 'Image Description Veggie A' }).click();
+  await page.getByRole('button', { name: 'Checkout' }).click();
+
+  await expect(page.getByPlaceholder('Email address')).toBeVisible();
+  await expect(page.getByPlaceholder('Password')).toBeVisible();
+});
+
+test('registration creates an account', async ({ page }) => {
+  await basicInit(page);
+
+  await page.getByRole('link', { name: 'Register', exact: true }).click();
+  await page.getByRole('textbox', { name: /name/i }).fill('Alex Smith');
+  await page.getByRole('textbox', { name: 'Email address' }).fill('alex@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('password');
+  await page.getByRole('button', { name: 'Register', exact: true }).click();
+
+  await expect(page.getByRole('link', { name: /Alex Smith|AS/ })).toBeVisible();
 });
