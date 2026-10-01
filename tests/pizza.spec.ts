@@ -28,7 +28,8 @@ async function basicInit(page: Page) {
   },
 };
 
-  const franchise = {
+  const franchises = [
+  {
     id: 2,
     name: 'LotaPizza',
     stores: [
@@ -36,7 +37,10 @@ async function basicInit(page: Page) {
       { id: 5, name: 'Springville' },
       { id: 6, name: 'American Fork' },
     ],
-  };
+  },
+  { id: 3, name: 'PizzaCorp', stores: [{ id: 7, name: 'Spanish Fork' }] },
+  { id: 4, name: 'topSpot', stores: [] },
+];
 
   await page.route('*/**/api/auth', async (route) => {
     const request = route.request();
@@ -143,7 +147,7 @@ async function basicInit(page: Page) {
     }
 
     if (request.method() === 'GET' && /\/api\/franchise\/\d+$/.test(url)) {
-      await route.fulfill({ json: [franchise] });
+      await route.fulfill({ json: [franchises[0]] });
       return;
     }
 
@@ -155,7 +159,7 @@ async function basicInit(page: Page) {
         name: body.name,
       };
 
-      franchise.stores.push(newStore);
+      franchises[0].stores.push(newStore);
 
       await route.fulfill({
         status: 201,
@@ -166,7 +170,7 @@ async function basicInit(page: Page) {
 
     if (request.method() === 'DELETE' && /\/store\/\d+$/.test(url)) {
       const storeId = Number(url.match(/\/store\/(\d+)$/)?.[1]);
-      franchise.stores = franchise.stores.filter((store) => store.id !== storeId);
+      franchises[0].stores = franchises[0].stores.filter((store) => store.id !== storeId);
 
       await route.fulfill({ status: 204, body: '' });
       return;
@@ -265,12 +269,9 @@ async function loginAsAdmin(page: Page) {
 
 test('login', async ({ page }) => {
   await basicInit(page);
-  await page.getByRole('link', { name: 'Login' }).click();
-  await page.getByRole('textbox', { name: 'Email address' }).fill('d@jwt.com');
-  await page.getByRole('textbox', { name: 'Password' }).fill('a');
-  await page.getByRole('button', { name: 'Login' }).click();
+  await loginAsDiner(page);
 
-  await expect(page.getByRole('link', { name: 'KC' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'KC', exact: true })).toBeVisible();
 });
 
 test('purchase with login', async ({ page }) => {
@@ -516,4 +517,15 @@ test('diner can log out from the dashboard', async ({ page }) => {
 
   await expect(page).toHaveURL('/');
   await expect(page.getByRole('link', { name: 'Login', exact: true })).toBeVisible();
+});
+
+test('not found page is displayed for an unknown route', async ({ page }) => {
+  await basicInit(page);
+
+  await page.goto('/route-that-does-not-exist');
+
+  await expect(page.getByRole('heading', { name: 'Oops', exact: true })).toBeVisible();
+  await expect(page.getByRole('main')).toContainText(
+    'It looks like we have dropped a pizza on the floor.',
+  );
 });
