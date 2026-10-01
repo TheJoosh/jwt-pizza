@@ -71,13 +71,55 @@ async function basicInit(page: Page) {
   });
 
   await page.route('*/**/api/order', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        json: {
+          id: '3',
+          dinerId: '3',
+          orders: [
+            {
+              id: '23',
+              franchiseId: '2',
+              storeId: '4',
+              date: '2026-09-30',
+              items: [
+                {
+                  menuId: '1',
+                  description: 'Veggie',
+                  price: 0.0038,
+                },
+              ],
+            },
+          ],
+        },
+      });
+      return;
+    }
+
     const orderReq = route.request().postDataJSON();
-    const orderRes = {
-      order: { ...orderReq, id: 23 },
-      jwt: 'eyJpYXQ',
-    };
-    expect(route.request().method()).toBe('POST');
-    await route.fulfill({ json: orderRes });
+    await route.fulfill({
+      json: {
+        order: { ...orderReq, id: 23 },
+        jwt: 'eyJpYXQ',
+      },
+    });
+  });
+
+  await page.route('*/**/api/docs', async (route) => {
+    await route.fulfill({
+      json: {
+        endpoints: [
+          {
+            requiresAuth: false,
+            method: 'GET',
+            path: '/api/order/menu',
+            description: 'Get the pizza menu',
+            example: '{}',
+            response: [],
+          },
+        ],
+      },
+    });
   });
 
   await page.goto('/');
@@ -207,4 +249,13 @@ test('registration rejects missing required fields', async ({ page }) => {
   await expect(page.getByRole('textbox', { name: /name/i })).toBeVisible();
   await expect(page.getByRole('textbox', { name: 'Email address' })).toBeVisible();
   await expect(page.getByRole('textbox', { name: 'Password' })).toBeVisible();
+});
+
+test('about page is displayed', async ({ page }) => {
+  await basicInit(page);
+
+  await page.getByRole('link', { name: 'About', exact: true }).click();
+
+  await expect(page).toHaveURL(/\/about/);
+  await expect(page.getByRole('main')).toBeVisible();
 });
