@@ -9,12 +9,29 @@ test('updateUser', async ({ page }) => {
     email,
     roles: [{ role: Role.Diner }],
   };
+  let updatedUser = { ...user };
 
   await page.route('*/**/api/auth', async (route) => {
-    expect(route.request().method()).toBe('POST');
+    const method = route.request().method();
+
+    if (method === 'DELETE') {
+      await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+
+    expect(['POST', 'PUT']).toContain(method);
     await route.fulfill({
       status: 200,
-      json: { user, token: 'registered-token' },
+      json: { user: updatedUser, token: 'registered-token' },
+    });
+  });
+
+  await page.route('*/**/api/user/4', async (route) => {
+    expect(route.request().method()).toBe('PUT');
+    updatedUser = { ...updatedUser, ...route.request().postDataJSON() };
+    await route.fulfill({
+      status: 200,
+      json: { user: updatedUser, token: 'updated-token' },
     });
   });
 
@@ -50,6 +67,17 @@ test('updateUser', async ({ page }) => {
   await page.getByRole('button', { name: 'Update' }).click();
 
   await page.waitForSelector('[role="dialog"].hidden', { state: 'attached' });
+
+  await expect(page.getByRole('main')).toContainText('pizza dinerx');
+
+  await page.getByRole('link', { name: 'Logout' }).click();
+  await page.getByRole('link', { name: 'Login' }).click();
+
+  await page.getByRole('textbox', { name: 'Email address' }).fill(email);
+  await page.getByRole('textbox', { name: 'Password' }).fill('diner');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await page.getByRole('link', { name: 'pd' }).click();
 
   await expect(page.getByRole('main')).toContainText('pizza dinerx');
 });
