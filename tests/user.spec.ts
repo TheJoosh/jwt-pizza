@@ -184,9 +184,6 @@ test('admin can delete a user and the user is no longer listed', async ({ page }
   await expect(page.getByText('User To Delete', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
 
-  await expect(page).toHaveURL(/\/admin-dashboard/);
-  await page.getByRole('button', { name: 'List Users', exact: true }).click();
-
   await expect(page).toHaveURL(/\/admin-dashboard\/list-users/);
   await expect(page.getByRole('row', { name: /User To Delete/ })).not.toBeVisible();
   await expect(page.getByRole('row', { name: /Remaining User/ })).toBeVisible();
