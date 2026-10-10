@@ -13,6 +13,7 @@ import Delivery from '../views/delivery';
 import FranchiseDashboard from '../views/franchiseDashboard';
 import History from '../views/history';
 import AdminDashboard from '../views/adminDashboard';
+import AdminListUsers from '../views/adminListUsers';
 import DinerDashboard from '../views/dinerDashboard';
 import CreateStore from '../views/createStore';
 import CreateFranchise from '../views/createFranchise';
@@ -75,6 +76,7 @@ export default function App() {
     { title: 'About', to: '/about', component: <About />, display: ['footer'] },
     { title: 'History', to: '/history', component: <History />, display: ['footer'] },
     { title: 'Admin', to: '/admin-dashboard', component: <AdminDashboard user={user} />, constraints: [isAdmin], display: ['nav'] },
+    { title: 'List users', to: '/admin-dashboard/list-users', component: <AdminListUsers user={user} />, constraints: [isAdmin], display: [] },
     { title: 'Create franchise', to: '/:subPath?/create-franchise', component: <CreateFranchise />, display: [] },
     { title: 'Close franchise', to: '/:subPath?/close-franchise', component: <CloseFranchise />, display: [] },
     { title: 'Create store', to: '/:subPath?/create-store', component: <CreateStore />, display: [] },

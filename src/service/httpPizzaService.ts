@@ -96,6 +96,11 @@ class HttpPizzaService implements PizzaService {
     return this.callEndpoint(`/api/franchise/${user.id}`);
   }
 
+  async getUsers(): Promise<User[]> {
+    const { users } = await this.callEndpoint('/api/user');
+    return users;
+  }
+
   async createFranchise(franchise: Franchise): Promise<Franchise> {
     return this.callEndpoint('/api/franchise', 'POST', franchise);
   }
