@@ -3,22 +3,36 @@ import View from './view';
 import NotFound from './notFound';
 import { pizzaService } from '../service/service';
 import { Role, User } from '../service/pizzaService';
+import Button from '../components/button';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
   user: User | null;
 }
 
+const USERS_PER_PAGE = 10;
+
 export default function AdminListUsers(props: Props) {
+  const navigate = useNavigate();
   const [users, setUsers] = React.useState<User[]>([]);
+  const [userPage, setUserPage] = React.useState(0);
 
   React.useEffect(() => {
     (async () => {
       setUsers(await pizzaService.getUsers());
+      setUserPage(0);
     })();
   }, [props.user]);
 
   if (!Role.isRole(props.user, Role.Admin)) {
     return <NotFound />;
+  }
+
+  const pageUsers = users.slice(userPage * USERS_PER_PAGE, (userPage + 1) * USERS_PER_PAGE);
+  const hasNextPage = (userPage + 1) * USERS_PER_PAGE < users.length;
+
+  function createFranchise() {
+    navigate('/admin-dashboard/create-franchise');
   }
 
   return (
@@ -41,7 +55,7 @@ export default function AdminListUsers(props: Props) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {users.map((listedUser, index) => (
+                      {pageUsers.map((listedUser, index) => (
                         <tr key={listedUser.id ?? index} className="hover:bg-gray-100">
                           <td className="px-6 py-4 text-sm text-center font-medium text-gray-800">{listedUser.name}</td>
                           <td className="px-6 py-4 text-sm text-center text-gray-800">{listedUser.email}</td>
@@ -49,6 +63,24 @@ export default function AdminListUsers(props: Props) {
                         </tr>
                       ))}
                     </tbody>
+                    <tfoot>
+                      <tr>
+                        <td colSpan={3} className="text-end text-sm font-medium">
+                          <button
+                            className="w-12 p-1 text-sm font-semibold rounded-lg border border-transparent bg-white text-grey border-grey m-1 hover:bg-orange-200 disabled:bg-neutral-300"
+                            onClick={() => setUserPage(userPage - 1)}
+                            disabled={userPage <= 0}>
+                            «
+                          </button>
+                          <button
+                            className="w-12 p-1 text-sm font-semibold rounded-lg border border-transparent bg-white text-grey border-grey m-1 hover:bg-orange-200 disabled:bg-neutral-300"
+                            onClick={() => setUserPage(userPage + 1)}
+                            disabled={!hasNextPage}>
+                            »
+                          </button>
+                        </td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               </div>
@@ -56,6 +88,10 @@ export default function AdminListUsers(props: Props) {
           </div>
         </div>
       </div>
+        <div>
+        <Button className="w-36 text-xs sm:text-sm sm:w-64" title="Back to Dashboard" onPress={() => navigate('/admin-dashboard/')} />
+        <Button className="w-36 text-xs sm:text-sm sm:w-64" title="Add Franchise" onPress={createFranchise} />
+        </div>
     </View>
   );
 }
