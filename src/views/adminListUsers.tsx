@@ -5,6 +5,7 @@ import { pizzaService } from '../service/service';
 import { Role, User } from '../service/pizzaService';
 import Button from '../components/button';
 import { useNavigate } from 'react-router-dom';
+import { TrashIcon } from '../icons';
 
 interface Props {
   user: User | null;
@@ -35,6 +36,10 @@ export default function AdminListUsers(props: Props) {
     navigate('/admin-dashboard/create-franchise');
   }
 
+  function deleteUser(user: User) {
+    navigate('/admin-dashboard/delete-user', { state: { user } });
+  }
+
   return (
     <View title="Mama Ricci's kitchen">
       <div className="text-start py-8 px-4 sm:px-6 lg:px-8">
@@ -47,7 +52,7 @@ export default function AdminListUsers(props: Props) {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="uppercase text-neutral-100 bg-slate-400 border-b-2 border-gray-500">
                       <tr>
-                        {['Name', 'Email', 'Roles'].map((header) => (
+                        {['Name', 'Email', 'Roles', 'Action'].map((header) => (
                           <th key={header} scope="col" className="px-6 py-3 text-center text-xs font-medium">
                             {header}
                           </th>
@@ -60,12 +65,21 @@ export default function AdminListUsers(props: Props) {
                           <td className="px-6 py-4 text-sm text-center font-medium text-gray-800">{listedUser.name}</td>
                           <td className="px-6 py-4 text-sm text-center text-gray-800">{listedUser.email}</td>
                           <td className="px-6 py-4 text-sm text-center text-gray-800">{listedUser.roles?.map((role) => role.role).join(', ')}</td>
+                          <td className="px-6 py-1 whitespace-nowrap text-end text-sm font-medium">
+                            <button
+                              type="button"
+                              className="px-2 py-1 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-1 border-orange-400 text-orange-400 hover:border-orange-800 hover:text-orange-800"
+                              onClick={() => deleteUser(listedUser)}>
+                              <TrashIcon />
+                              Delete
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
                       <tr>
-                        <td colSpan={3} className="text-end text-sm font-medium">
+                        <td colSpan={4} className="text-end text-sm font-medium">
                           <button
                             className="w-12 p-1 text-sm font-semibold rounded-lg border border-transparent bg-white text-grey border-grey m-1 hover:bg-orange-200 disabled:bg-neutral-300"
                             onClick={() => setUserPage(userPage - 1)}
