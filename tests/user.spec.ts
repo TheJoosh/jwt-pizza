@@ -83,3 +83,62 @@ test('updateUser', async ({ page }) => {
 
   await expect(page.getByRole('main')).toContainText('pizza dinerx');
 });
+
+test('admin can view users with pagination', async ({ page }) => {
+  const admin = {
+    id: '1',
+    name: 'Admin User',
+    email: 'a@jwt.com',
+    roles: [{ role: Role.Admin }],
+  };
+  const users = Array.from({ length: 11 }, (_, index) => ({
+    id: String(index + 1),
+    name: `User ${index + 1}`,
+    email: `user${index + 1}@jwt.com`,
+    roles: [{ role: Role.Diner }],
+  }));
+
+  await page.addInitScript(() => {
+    localStorage.setItem('token', 'admin-token');
+  });
+
+  await page.route('*/**/api/user/me', async (route) => {
+    await route.fulfill({ json: admin });
+  });
+
+  await page.route('*/**/api/user', async (route) => {
+    expect(route.request().method()).toBe('GET');
+    await route.fulfill({ json: { users } });
+  });
+
+  await page.route('*/**/api/franchise**', async (route) => {
+    await route.fulfill({ json: { franchises: [], more: false } });
+  });
+
+  await page.goto('/admin-dashboard');
+  await page.getByRole('button', { name: 'List Users', exact: true }).click();
+
+  await expect(page).toHaveURL(/\/admin-dashboard\/list-users/);
+  await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible();
+
+  const userRows = page.locator('tbody tr');
+  await expect(userRows).toHaveCount(10);
+  await expect(page.getByText('User 1', { exact: true })).toBeVisible();
+  await expect(page.getByText('User 11', { exact: true })).not.toBeVisible();
+
+  const previousButton = page.getByRole('button', { name: '«' });
+  const nextButton = page.getByRole('button', { name: '»' });
+  await expect(previousButton).toBeDisabled();
+  await expect(nextButton).toBeEnabled();
+
+  await nextButton.click();
+  await expect(userRows).toHaveCount(1);
+  await expect(page.getByText('User 1', { exact: true })).not.toBeVisible();
+  await expect(page.getByText('User 11', { exact: true })).toBeVisible();
+  await expect(previousButton).toBeEnabled();
+  await expect(nextButton).toBeDisabled();
+
+  await previousButton.click();
+  await expect(userRows).toHaveCount(10);
+  await expect(page.getByText('User 1', { exact: true })).toBeVisible();
+});
