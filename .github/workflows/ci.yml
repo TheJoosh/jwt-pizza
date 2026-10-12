@@ -49,13 +49,10 @@ jobs:
   deploy:
     needs: build
     permissions:
-      pages: write
       id-token: write
+    env:
+      version: ${{ needs.build.outputs.version }}
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      name: production
+      url: https://pizza.fjordcards.click
     runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
